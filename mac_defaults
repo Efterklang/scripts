@@ -1,0 +1,72 @@
+#! /bin/bash
+
+# ~/.macos — https://mths.be/macos
+
+# Close any open System Preferences panes, to prevent them from overriding
+# settings we’re about to change
+osascript -e 'tell application "System Preferences" to quit'
+
+# Ask for the administrator password upfront
+sudo -v
+
+# Keep-alive: update existing `sudo` time stamp until `.macos` has finished
+while true; do
+  sudo -n true
+  sleep 60
+  kill -0 "$$" || exit
+done 2>/dev/null &
+
+#Enable move windows by holding ctrl+cmd and dragging any part of the window (not necessarily the window title)
+defaults write -g NSWindowShouldDragOnGesture -bool true
+
+sudo defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+sudo defaults write NSGlobalDomain NSTableViewDefaultSizeMode -int 1
+sudo defaults write com.apple.finder ShowStatusBar -bool true
+sudo defaults write com.apple.finder ShowPathbar -bool true
+
+fixfinder() {
+  printf "%b\n" "${YELLOW}Applying global theme settings for Finder...${RC}"
+
+  # Set the default Finder view to list view
+  printf "%b\n" "${CYAN}Setting default Finder view to list view...${RC}"
+  sudo defaults write com.apple.finder FXPreferredViewStyle -string "Nlsv"
+
+  # Configure list view settings for all folders
+  printf "%b\n" "${CYAN}Configuring list view settings for all folders...${RC}"
+  # Set default list view settings for new folders
+  sudo defaults write com.apple.finder FK_StandardViewSettings -dict-add ListViewSettings '{ "columns" = ( { "ascending" = 1; "identifier" = "name"; "visible" = 1; "width" = 300; }, { "ascending" = 0; "identifier" = "dateModified"; "visible" = 1; "width" = 181; }, { "ascending" = 0; "identifier" = "size"; "visible" = 1; "width" = 97; } ); "iconSize" = 16; "showIconPreview" = 0; "sortColumn" = "name"; "textSize" = 12; "useRelativeDates" = 1; }'
+
+  # Clear existing folder view settings to force use of default settings
+  printf "%b\n" "${CYAN}Clearing existing folder view settings...${RC}"
+  sudo defaults delete com.apple.finder FXInfoPanesExpanded 2>/dev/null || true
+  sudo defaults delete com.apple.finder FXDesktopVolumePositions 2>/dev/null || true
+
+  # Set list view for all view types
+  printf "%b\n" "${CYAN}Setting list view for all folder types...${RC}"
+  sudo defaults write com.apple.finder FK_StandardViewSettings -dict-add ExtendedListViewSettings '{ "columns" = ( { "ascending" = 1; "identifier" = "name"; "visible" = 1; "width" = 300; }, { "ascending" = 0; "identifier" = "dateModified"; "visible" = 1; "width" = 181; }, { "ascending" = 0; "identifier" = "size"; "visible" = 1; "width" = 97; } ); "iconSize" = 16; "showIconPreview" = 0; "sortColumn" = "name"; "textSize" = 12; "useRelativeDates" = 1; }'
+
+  # Sets default search scope to the current folder
+  printf "%b\n" "${CYAN}Setting default search scope to the current folder...${RC}"
+  sudo defaults write com.apple.finder FXDefaultSearchScope -string "SCcf"
+
+  # Remove trash items older than 30 days
+  printf "%b\n" "${CYAN}Removing trash items older than 30 days...${RC}"
+  sudo defaults write com.apple.finder "FXRemoveOldTrashItems" -bool "true"
+
+  # Remove .DS_Store files to reset folder view settings
+  printf "%b\n" "${CYAN}Removing .DS_Store files to reset folder view settings...${RC}"
+  fd ~ -name ".DS_Store" -type f -delete 2>/dev/null || true
+
+  # Clean up Finder's sidebar
+  printf "%b\n" "${CYAN}Cleaning up Finder's sidebar...${RC}"
+  sudo defaults write com.apple.finder SidebarDevicesSectionDisclosedState -bool true
+  sudo defaults write com.apple.finder SidebarPlacesSectionDisclosedState -bool true
+  sudo defaults write com.apple.finder SidebarShowingiCloudDesktop -bool false
+
+  # Restart Finder to apply changes
+  printf "%b\n" "${GREEN}Finder has been restarted and settings have been applied.${RC}"
+  sudo killall Finder
+}
+
+fixfinder
+
