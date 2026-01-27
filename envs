@@ -8,11 +8,12 @@ def --env env [name: string value: string] {
       /bin/launchctl setenv $name $value
     }
     "linux" => {
+      # Write env vars to /etc/profile.d folder
       let env_file = "/etc/profile.d/gnix-env.sh"
       touch $env_file
       chmod +x $env_file
       let lines = (open $env_file | lines | where not ($it | str starts-with $"export ($name)="))
-      let env_value = ($value | str replace $nu.home-path "$HOME")
+      let env_value = ($value | str replace $nu.home-dir "$HOME")
       let updated = ($lines | append $"export ($name)=\"($env_value)\"")
       $updated | str join (char nl) | save --force $env_file
     }
@@ -20,10 +21,10 @@ def --env env [name: string value: string] {
       setx $name $value
     }
   }
-  print $"☑️ Set environment variable: ($name)=($value)"
+  print $"🍓 Set env: ($name)=($value)"
 }
 
-# Os-specific overrides
+# OS specific overrides
 match $nu.os-info.name {
   "macos" => {
     # 沟槽的plist运行时不会读取 /etc/paths, 导致执行vivid时command not found
@@ -37,22 +38,22 @@ match $nu.os-info.name {
 }
 
 # XDG Base Directory variables, check https://specifications.freedesktop.org/basedir-spec/latest/
-env XDG_BIN_HOME $"($nu.home-path)/.local/bin"
-env XDG_CACHE_HOME $"($nu.home-path)/.cache"
-env XDG_CONFIG_HOME $"($nu.home-path)/.config"
+env XDG_BIN_HOME $"($nu.home-dir)/.local/bin"
+env XDG_CACHE_HOME $"($nu.home-dir)/.cache"
+env XDG_CONFIG_HOME $"($nu.home-dir)/.config"
 env XDG_CONFIG_DIRS "/etc/xdg"
-env XDG_DATA_HOME $"($nu.home-path)/.local/share"
+env XDG_DATA_HOME $"($nu.home-dir)/.local/share"
 env XDG_DATA_DIRS "/usr/local/share/:/usr/share/"
-env XDG_STATE_HOME $"($nu.home-path)/.local/state"
+env XDG_STATE_HOME $"($nu.home-dir)/.local/state"
 
 # User directories
-env XDG_DESKTOP_DIR $"($nu.home-path)/Desktop"
-env XDG_DOCUMENTS_DIR $"($nu.home-path)/Documents"
-env XDG_DOWNLOAD_DIR $"($nu.home-path)/Downloads"
-env XDG_MUSIC_DIR $"($nu.home-path)/Music"
-env XDG_PICTURES_DIR $"($nu.home-path)/Pictures"
-env XDG_PUBLICSHARE_DIR $"($nu.home-path)/Public"
-env XDG_VIDEOS_DIR $"($nu.home-path)/Movies"
+env XDG_DESKTOP_DIR $"($nu.home-dir)/Desktop"
+env XDG_DOCUMENTS_DIR $"($nu.home-dir)/Documents"
+env XDG_DOWNLOAD_DIR $"($nu.home-dir)/Downloads"
+env XDG_MUSIC_DIR $"($nu.home-dir)/Music"
+env XDG_PICTURES_DIR $"($nu.home-dir)/Pictures"
+env XDG_PUBLICSHARE_DIR $"($nu.home-dir)/Public"
+env XDG_VIDEOS_DIR $"($nu.home-dir)/Movies"
 
 # Ensure directories exist
 mkdir $env.XDG_CACHE_HOME $env.XDG_CONFIG_HOME $env.XDG_DATA_HOME $env.XDG_STATE_HOME
@@ -76,7 +77,6 @@ env MACHINE_STORAGE_PATH $"($env.XDG_DATA_HOME)/docker_machine"
 # npm
 env NPM_CONFIG_USERCONFIG $"($env.XDG_CONFIG_HOME)/npm/npmrc"
 env NPM_CONFIG_CACHE $"($env.XDG_CACHE_HOME)/npm"
-env NPM_CONFIG_TMP $"($env.XDG_CACHE_HOME)/npm"
 # zsh
 env ZDOTDIR $"($env.XDG_CONFIG_HOME)/zsh"
 env ZSH_PROFILE $"($env.XDG_CONFIG_HOME)/zsh/profile"
@@ -87,8 +87,8 @@ env YAZI_CONFIG_HOME $"($env.XDG_CONFIG_HOME)/yazi"
 env EDITOR "nvim"
 env MANPAGER "nvim +Man!"
 # topiary
-env TOPIARY_CONFIG_FILE $"($nu.home-path)/.config/topiary/languages.ncl"
-env TOPIARY_LANGUAGE_DIR $"($nu.home-path)/.config/topiary/languages"
+env TOPIARY_CONFIG_FILE $"($nu.home-dir)/.config/topiary/languages.ncl"
+env TOPIARY_LANGUAGE_DIR $"($nu.home-dir)/.config/topiary/languages"
 # fzf
 env FZF_DEFAULT_OPTS ' --info right --prompt "󰥨 Search: " --pointer ">" --border "rounded" --border-label=" 󱉭 FZF " --border-label-pos center --color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8 --color=fg:#cdd6f4,header:#f38ba8,info:#b4befe,pointer:#f38ba8 --color=marker:#b4befe,fg+:#cdd6f4,prompt:#b4befe,hl+:#f38ba8 --color=selected-bg:#45475a --multi --layout reverse '
 env FZF_DEFAULT_COMMAND 'fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
@@ -104,8 +104,5 @@ env ANDROID_USER_HOME $"($env.XDG_DATA_HOME)/android"
 env STACK_ROOT $"($env.XDG_DATA_HOME)/stack"
 # wakatime
 env WAKATIME_HOME $"($env.XDG_CONFIG_HOME)/wakatime"
-
 # carapace
 env CARAPACE_MERGEFLAGS 1
-# FIX: macos26 bug
-env CHROME_HEADLESS 1
